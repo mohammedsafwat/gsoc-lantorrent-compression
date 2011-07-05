@@ -9,7 +9,7 @@ from pylantorrent.ltConnection import *
 import simplejson as json
 import traceback
 import hashlib
-
+from decompress import LTDecompress
 #  The first thing sent is a json header terminated by a single line
 #  of EOH
 #
@@ -80,7 +80,10 @@ class LTServer(object):
         self.json_header = self.source_conn.read_header()
         self.degree = int(self.json_header['degree'])
         self.data_length = long(self.json_header['length'])
-
+	self.compression_type = self.json_header['compression_type']
+        if self.compression_type is not None:
+            self.decompression = True
+	
     def print_results(self, s):
         pylantorrent.log(logging.DEBUG, "printing\n--------- \n%s\n---------------" % (s))
         self.outf.write(s)
@@ -143,13 +146,15 @@ class LTServer(object):
             md5er.update(data)
             for v_con in self.v_con_array:
                 v_con.send(data)
-	    while data:
-		out_buffer = decomp.unzip(data)
-		for f in self.files_a:
-			f.write(out_buffer)
-			data = self.source_conn.read_data(bs)
-            #for f in self.files_a:
-                #f.write(data)
+	    if self.decompression:
+	        while data:
+		    out_buffer = decomp.unzip(data)
+		    for f in self.files_a:
+			    f.write(out_buffer)
+			    data = self.source_conn.read_data(bs)
+	    else:
+                for f in self.files_a:
+                    f.write(data)
             read_count = read_count + len(data)
         self.md5str = str(md5er.hexdigest()).strip()
         pylantorrent.log(logging.DEBUG, "We have received sent %d bytes. The md5sum is %s" % (read_count, self.md5str))
