@@ -148,7 +148,7 @@ class LTServer(object):
                 v_con.send(data)
 	    if self.decompression:
 	        while data:
-		    out_buffer = decomp.unzip(data)
+                    out_buffer = decomp.unzip(data)
 		    for f in self.files_a:
 			    f.write(out_buffer)
 			    data = self.source_conn.read_data(bs)
