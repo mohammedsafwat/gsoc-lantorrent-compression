@@ -1,0 +1,27 @@
+Metadata-Version: 1.0
+Name: lantorrent
+Version: 0.2
+Summary: An Open Source network protocol for broadcasting large files.
+Home-page: http://www.nimbusproject.org/
+Author: Nimbus Development Team
+Author-email: workspace-user@globus.org
+License: Apache2
+Download-URL: http://www.nimbusproject.org/downloads/lantorrent-0.2.tar.gz
+Description: 
+        Fast multicast of large files (designed for VM images)
+        
+Keywords: multicast broadcast network protocol transfer
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: System Administrators
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: POSIX
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python
+Classifier: Topic :: System :: Clustering
+Classifier: Topic :: System :: Distributed Computing

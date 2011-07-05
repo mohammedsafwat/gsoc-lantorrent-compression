@@ -1,0 +1,2 @@
+simplejson == 2.1
+sqlalchemy == 0.6

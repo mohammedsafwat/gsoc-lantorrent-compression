@@ -1,0 +1,6 @@
+[console_scripts]
+ltserver = pylantorrent.server:main
+ltrequest = pylantorrent.request:main
+ltdaemon = pylantorrent.daemon:main
+ltclient = pylantorrent.client:main
+
