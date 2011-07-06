@@ -151,11 +151,23 @@ class LTServer(object):
             md5er.update(data)
             for v_con in self.v_con_array:
                 v_con.send(data)
+<<<<<<< HEAD
             # if we have a decompression object we use it, if not pass though
             if self.decomp_obj:
                 data = self.decomp_obj.unzip(data)
             for f in self.files_a:
                 f.write(data)
+=======
+	    if self.decompression:
+	        while data:
+                    out_buffer = decomp.unzip(data)
+		    for f in self.files_a:
+			    f.write(out_buffer)
+			    data = self.source_conn.read_data(bs)
+	    else:
+                for f in self.files_a:
+                    f.write(data)
+>>>>>>> 36915ee792aa03cd993a9d553b87e7bf81ea2f6b
             read_count = read_count + len(data)
         self.md5str = str(md5er.hexdigest()).strip()
         pylantorrent.log(logging.DEBUG, "We have received sent %d bytes. The md5sum is %s" % (read_count, self.md5str))
