@@ -22,6 +22,7 @@ class LTException(Exception):
     errorsCode[508] = "Access denied: %s"
     errorsCode[509] = "completion status never recieved %s"
     errorsCode[510] = "Incorrect checksum %s"
+    errorsCode[511] = "Unknown compression type %s"
 
     def __init__(self, code, msg, host=None, port=None, reqs=None, md5sum=""):
         self.code = code

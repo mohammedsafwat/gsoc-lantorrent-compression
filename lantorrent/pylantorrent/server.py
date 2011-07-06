@@ -39,6 +39,7 @@ class LTServer(object):
         self.v_con_array = []
         self.files_a = []
         self.md5str = None
+        self.decomp_obj = None
 
     def _close_files(self):
         for f in self.files_a:
@@ -80,10 +81,14 @@ class LTServer(object):
         self.json_header = self.source_conn.read_header()
         self.degree = int(self.json_header['degree'])
         self.data_length = long(self.json_header['length'])
-	self.compression_type = self.json_header['compression_type']
-        if self.compression_type is not None:
-            self.decompression = True
-	
+        self.compression_type = self.json_header['compression']
+        if self.compression_type: # so long as it is not None or ""
+            try:
+                #  we pick the decompression object as soon as possible
+                self.decomp_obj = LTDecompress(self.compression_type)
+            except LTException, ex:
+                pylantorrent.log(logging.ERROR, "problem with auto de-compression, will write the file compressed"
+    
     def print_results(self, s):
         pylantorrent.log(logging.DEBUG, "printing\n--------- \n%s\n---------------" % (s))
         self.outf.write(s)
@@ -133,7 +138,7 @@ class LTServer(object):
     # it will throttle on the one blocking socket from the data source
     # and push the rest to the vcon objects
     def _process_io(self):
-	decomp = LTDecompress()
+        decomp = LTDecompress()
         md5er = hashlib.md5()
         read_count = 0
         bs = self.block_size
@@ -146,15 +151,11 @@ class LTServer(object):
             md5er.update(data)
             for v_con in self.v_con_array:
                 v_con.send(data)
-	    if self.decompression:
-	        while data:
-		    out_buffer = decomp.unzip(data)
-		    for f in self.files_a:
-			    f.write(out_buffer)
-			    data = self.source_conn.read_data(bs)
-	    else:
-                for f in self.files_a:
-                    f.write(data)
+            # if we have a decompression object we use it, if not pass though
+            if self.decomp_obj:
+                data = self.decomp_obj.unzip(data)
+            for f in self.files_a:
+                f.write(data)
             read_count = read_count + len(data)
         self.md5str = str(md5er.hexdigest()).strip()
         pylantorrent.log(logging.DEBUG, "We have received sent %d bytes. The md5sum is %s" % (read_count, self.md5str))

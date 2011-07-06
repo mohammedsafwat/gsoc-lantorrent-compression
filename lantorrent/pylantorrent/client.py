@@ -15,13 +15,14 @@ import hashlib
 
 class LTClient(object):
 
-    def __init__(self, filename, json_header):
+    def __init__(self, filename, json_header, compression=""):
         self.data_size = os.path.getsize(filename)
         self.data_file = open(filename, "r")
         self.success_count = 0
         self.md5str = None
 
         json_header['length'] = self.data_size
+        json_header['compression'] = compression
         outs = json.dumps(json_header)
         auth_hash = pylantorrent.get_auth_hash(outs)
         self.header_lines = outs.split("\n")
