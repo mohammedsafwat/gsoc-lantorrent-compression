@@ -15,12 +15,6 @@ class DecompressionTest(unittest.TestCase):
         self.compression_type = "bz2"
         
     def test_decompression(self):
-        '''
-        inf = open("/home/mohammed/Desktop/log.txt", "r")
-        outf = open("/home/mohammed/Desktop/test-compression.txt", "w")
-        v = LTServer(inf, outf)
-        v.store_and_forward()
-        '''
         final = pylantorrent.create_endpoint_entry(self.host, ["/home/mohammed/Desktop/patch.txt"], self.src_size, self.compression_type, rename=False)
         final['destinations'] = []
         c = LTClient(self.src_file, final, self.compression_type)
