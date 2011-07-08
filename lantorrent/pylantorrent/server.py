@@ -39,12 +39,13 @@ class LTServer(object):
         self.v_con_array = []
         self.files_a = []
         self.md5str = None
-
+        self.decomp_obj = None
+        
     def _close_files(self):
         for f in self.files_a:
             f.close()
         self.files_a = []
-
+        
     def _close_connections(self):
         for v_con in self.v_con_array:
             v_con.close()
@@ -80,9 +81,13 @@ class LTServer(object):
         self.json_header = self.source_conn.read_header()
         self.degree = int(self.json_header['degree'])
         self.data_length = long(self.json_header['length'])
-	self.compression_type = self.json_header['compression_type']
-        if self.compression_type is not None:
-            self.decompression = True
+	self.compression_type = self.json_header['compression']
+        if self.compression_type: # so long as it's not None or ""
+            try:
+                # we pick the decompression type as soon as possible
+                self.decomp_obj = LTDecompress(self.compression_type)
+            except LTException, ex:
+                pylantorrent.log(logging.ERROR, "Problem with auto-decompression, will write the program compressed.")
 	
     def print_results(self, s):
         pylantorrent.log(logging.DEBUG, "printing\n--------- \n%s\n---------------" % (s))
@@ -133,7 +138,6 @@ class LTServer(object):
     # it will throttle on the one blocking socket from the data source
     # and push the rest to the vcon objects
     def _process_io(self):
-	decomp = LTDecompress()
         md5er = hashlib.md5()
         read_count = 0
         bs = self.block_size
@@ -146,15 +150,12 @@ class LTServer(object):
             md5er.update(data)
             for v_con in self.v_con_array:
                 v_con.send(data)
-	    if self.decompression:
-	        while data:
-                    out_buffer = decomp.unzip(data)
-		    for f in self.files_a:
-			    f.write(out_buffer)
-			    data = self.source_conn.read_data(bs)
-	    else:
-                for f in self.files_a:
-                    f.write(data)
+	    if self.decomp_obj:
+                data = self.decomp_obj.unzip(data)
+                pylantorrent.log(logging.DEBUG, "Decompressing....")
+            for f in self.files_a:
+                f.write(data)
+            #self.source_conn._close()
             read_count = read_count + len(data)
         self.md5str = str(md5er.hexdigest()).strip()
         pylantorrent.log(logging.DEBUG, "We have received sent %d bytes. The md5sum is %s" % (read_count, self.md5str))
@@ -165,7 +166,7 @@ class LTServer(object):
         self._read_header()
         header = self.json_header
         requests_a = header['requests']
-
+        compression = header['compression']
         self._open_dest_files(requests_a)
         destinations = header['destinations']
         self._get_valid_vcons(destinations)
@@ -185,7 +186,7 @@ class LTServer(object):
         # if we got to here it was successfully written to a file
         # and we can call it success.  Print out a success message for 
         # everyfile written
-        vex = LTException(0, "Success", header['host'], int(header['port']), requests_a, md5sum=self.md5str)
+        vex = LTException(0, "Success", compression, header['host'], int(header['port']), requests_a, md5sum=self.md5str)
         s = vex.get_printable()
         self.print_results(s)
         self.clean_up()

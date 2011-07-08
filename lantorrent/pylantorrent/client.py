@@ -12,16 +12,20 @@ except ImportError:
 import traceback
 import uuid
 import hashlib
+from decompress import LTCompress
 
 class LTClient(object):
 
-    def __init__(self, filename, json_header):
+    def __init__(self, filename, json_header, compression):
         self.data_size = os.path.getsize(filename)
         self.data_file = open(filename, "r")
         self.success_count = 0
         self.md5str = None
 
         json_header['length'] = self.data_size
+        json_header['compression'] = compression
+
+        #encoding
         outs = json.dumps(json_header)
         auth_hash = pylantorrent.get_auth_hash(outs)
         self.header_lines = outs.split("\n")
@@ -68,13 +72,15 @@ class LTClient(object):
         pylantorrent.log(logging.DEBUG, "reading.... ")
         if self.file_data:
             d = self.data_file.read(blocksize)
+ 
             if not d:
-                pylantorrent.log(logging.DEBUG, "no mo file data")
+                pylantorrent.log(logging.DEBUG, "no more file data")
                 self.file_data = False
             else:
                 pylantorrent.log(logging.DEBUG, "### data len = %d" % (len(d)))
                 self.md5er.update(d)
                 return d
+                return out_buffer
         pylantorrent.log(logging.DEBUG, "check footer")
         if not self.file_data:
             pylantorrent.log(logging.DEBUG, "getting footer")
@@ -145,7 +151,7 @@ def main(argv=sys.argv[1:]):
         filename = "/" + a[1].strip()
 
         filenames = [filename,]
-        json_dest = pylantorrent.create_endpoint_entry(host, filenames, data_size, port, block_size, degree)
+        json_dest = pylantorrent.create_endpoint_entry(host, filenames, data_size, compression, port, block_size, degree)
         dests.append(json_dest)
 
         l = sys.stdin.readline()
@@ -153,7 +159,7 @@ def main(argv=sys.argv[1:]):
 
     # for the sake of code resuse this will just be piped into an
     # lt daemon processor.  /dev/null is used to supress a local write
-    final = pylantorrent.create_endpoint_entry("localhost", ["/dev/null",], data_size, rename=False)
+    final = pylantorrent.create_endpoint_entry("localhost", ["/dev/null",], data_size, compression, rename=False)
     final['destinations'] = dests
 
     c = LTClient(argv[0], final)

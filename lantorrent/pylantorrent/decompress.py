@@ -1,5 +1,5 @@
 import bz2
-
+from pylantorrent.ltException import LTException
 class LTCompress(object):
 
     def __init__(self, level=2):
@@ -14,9 +14,14 @@ class LTCompress(object):
         
 
 class LTDecompress(object):
-
-    def __init__(self):
-        self._bzip = bz2.BZ2Decompressor()
-
+    def __init__(self, compression_type):
+        #  here we will pick set the compression object based upon the
+        #  type.  Only bz is supported for now.  all others will cause an
+        #  error
+        if compression_type.lower() == "bz2":
+            self._bzip = bz2.BZ2Decompressor()
+        else:
+            raise LTException(511, "Unknown compression type", compression_type)
+            
     def unzip(self, buffer):
         return self._bzip.decompress(buffer)

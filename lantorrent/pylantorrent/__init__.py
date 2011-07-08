@@ -28,7 +28,7 @@ def log(level, msg, tb=None):
         logging.log(level, "===========")
         logging.log(level, sys.exc_info()[0])
 
-def create_endpoint_entry(host, dest_files, data_size, compression_type, port=2893, block_size=128*1024, degree=1, rename=True):
+def create_endpoint_entry(host, dest_files, data_size, compression, port=2893, block_size=128*1024, degree=1, rename=True):
 
     final = {}
     requests = []
@@ -45,7 +45,7 @@ def create_endpoint_entry(host, dest_files, data_size, compression_type, port=28
     final['block_size'] = block_size
     final['degree'] = degree
     final['length'] = data_size
-    final['compression_type'] = compression_type
+    final['compression'] = compression
 
     return final
 

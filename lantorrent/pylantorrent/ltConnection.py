@@ -36,7 +36,7 @@ class LTDestConnection(object):
             self.block_size = int(json_ent['block_size'])
             self.degree = int(json_ent['degree'])
             self.data_length = int(json_ent['length'])
-	    self.compression_type = json_ent['compression_type']
+	    self.compression_type = json_ent['compression']
         except Exception, ex:
             vex = LTException(504, str(json_ent) + " :: " + str(ex))
             pylantorrent.log(logging.ERROR, str(vex), traceback)
@@ -72,7 +72,7 @@ class LTDestConnection(object):
         header['degree'] = self.degree
         header['length'] = self.data_length
         header['destinations'] = destinations
-	header['compression_type'] = self.compression_type
+	header['compression'] = self.compression_type
         send_str = json.dumps(header)
         send_str = send_str + "\n"
         pylantorrent.log(logging.DEBUG, "sending header %s" % (send_str))
@@ -151,7 +151,10 @@ class LTSourceConnection(object):
         else:
             d = self.inf.read(bs)
         return d
-
+    
+    def _close(self):
+        self.inf.close()
+        
     def _readline(self):
         l = self.inf.readline()
         return l
@@ -169,7 +172,7 @@ class LTSourceConnection(object):
         pylantorrent.log(logging.DEBUG, "footer is %s" % (lines))
         foot = json.loads(lines)
         if foot['md5sum'] != md5str:
-            raise LTException(510, "%s != %s" % (md5str, foot['md5sum']), header['host'], int(header['port']), requests_a, md5sum=md5str)
+            raise LTException(510, "%s != %s" % (md5str, foot['md5sum']), header['host'], int(header['port']), header['compression'], requests_a, md5sum=md5str)
         self.footer = foot
         return foot
 
@@ -218,7 +221,7 @@ class LTSourceConnection(object):
             urls = self.header['destinations']
             degree = int(self.header['degree'])
             data_length = long(self.header['length'])
-            compression_type = self.header['compression_type']
+            compression_type = self.header['compression']
         except Exception, ex:
             raise LTException(502, str(ex), traceback)
 
