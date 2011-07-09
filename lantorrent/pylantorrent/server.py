@@ -82,10 +82,16 @@ class LTServer(object):
         self.degree = int(self.json_header['degree'])
         self.data_length = long(self.json_header['length'])
 	self.compression_type = self.json_header['compression']
-        if self.compression_type: # so long as it's not None or ""
+        self.filename_extension = self.json_header['filename_extension']
+        pylantorrent.log(logging.DEBUG, "Received file extension is %s" % self.filename_extension)
+        
+        if self.compression_type or self.filename_extension:
+            temp_compression_type = self.compression_type or self.filename_extension
+            pylantorrent.log(logging.DEBUG, "temp_compression_type is %s" % temp_compression_type)
             try:
                 # we pick the decompression type as soon as possible
-                self.decomp_obj = LTDecompress(self.compression_type)
+                self.decomp_obj = LTDecompress(temp_compression_type)
+                #self.decomp_obj = LTDecompress(self.compression_type)
             except LTException, ex:
                 pylantorrent.log(logging.ERROR, "Problem with auto-decompression, will write the program compressed.")
 	
@@ -152,7 +158,6 @@ class LTServer(object):
                 v_con.send(data)
 	    if self.decomp_obj:
                 data = self.decomp_obj.unzip(data)
-                pylantorrent.log(logging.DEBUG, "Decompressing....")
             for f in self.files_a:
                 f.write(data)
             #self.source_conn._close()
@@ -189,7 +194,7 @@ class LTServer(object):
         vex = LTException(0, "Success", compression, header['host'], int(header['port']), requests_a, md5sum=self.md5str)
         s = vex.get_printable()
         self.print_results(s)
-        self.clean_up()
+        #self.clean_up()
 
     def _rename_files(self, requests_a):
         for req in requests_a:

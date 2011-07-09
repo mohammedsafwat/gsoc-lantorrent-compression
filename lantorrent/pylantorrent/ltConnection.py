@@ -222,6 +222,7 @@ class LTSourceConnection(object):
             degree = int(self.header['degree'])
             data_length = long(self.header['length'])
             compression_type = self.header['compression']
+            filename_extension = self.header['filename_extension']
         except Exception, ex:
             raise LTException(502, str(ex), traceback)
 
