@@ -2,6 +2,7 @@
 import os.path
 import unittest
 import nose.tools
+import sys
 from client import *
 from server import *
 from ltConnection import *
@@ -10,17 +11,22 @@ class DecompressionTest(unittest.TestCase):
     
     def setUp(self):
         self.host = "localhost"
-        self.src_file = "/home/mohammed/Desktop/easymock-3.0.zip"
+        #src file for decompression
+        self.src_file = "/home/mohammed/Desktop/test.txt.zip"
         self.src_size = os.path.getsize(self.src_file)
-        self.compression_type = "bz2"
+        #the compression type used, needed for
+        #decompression to check for the extension.
+        self.compression_type = ""
+        self.compress_input = False #compress the input or not option
         
-    def test_decompression(self):
+    def test_decompression(self):   
         '''
         passing the parameter self.compression_type is optional. If you don't
-        pass it, the compression will be determined by the filename extension.
+        pass it, the decompression will be determined by the filename extension.
         '''
-        final = pylantorrent.create_endpoint_entry(self.host, ["/home/mohammed/Desktop/patch.txt"], self.src_size, rename=False)
+        final = pylantorrent.create_endpoint_entry(self.host, ["/home/mohammed/Desktop/output.txt.zip"], self.src_size, self.compress_input, rename=False)
         final['destinations'] = []
+        final['compress_input'] = [self.compress_input]
         '''
         self.compression_type is an optional parameter. You can pass it or not.
         If you will pass the self.compression_type, so use:
@@ -32,6 +38,7 @@ class DecompressionTest(unittest.TestCase):
         c = LTClient(self.src_file, final)
         v = LTServer(c, c)
         v.store_and_forward()
+
         
 if __name__ == '__main__':
     unittest.main()

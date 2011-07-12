@@ -223,6 +223,7 @@ class LTSourceConnection(object):
             data_length = long(self.header['length'])
             compression_type = self.header['compression']
             filename_extension = self.header['filename_extension']
+            compress_input = self.header['compress_input']
         except Exception, ex:
             raise LTException(502, str(ex), traceback)
 

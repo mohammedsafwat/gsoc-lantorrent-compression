@@ -28,7 +28,7 @@ def log(level, msg, tb=None):
         logging.log(level, "===========")
         logging.log(level, sys.exc_info()[0])
 
-def create_endpoint_entry(host, dest_files, data_size, compression=None, port=2893, block_size=128*1024, degree=1, rename=True):
+def create_endpoint_entry(host, dest_files, data_size, compression=None, port=2893, block_size=128*1024, degree=1, compress_input=False, rename=True):
 
     final = {}
     requests = []
@@ -46,7 +46,8 @@ def create_endpoint_entry(host, dest_files, data_size, compression=None, port=28
     final['degree'] = degree
     final['length'] = data_size
     final['compression'] = compression
-
+    final['compress_input'] = compress_input
+    pylantorrent.log(logging.DEBUG, "Compress input state in create_endpoint_entry is %s" % compress_input)
     return final
 
 

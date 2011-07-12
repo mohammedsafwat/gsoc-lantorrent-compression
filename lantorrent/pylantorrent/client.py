@@ -21,15 +21,16 @@ class LTClient(object):
         self.data_file = open(filename, "r")
         self.success_count = 0
         self.md5str = None
+
         self.filename_splitted = filename.split('.')
         self.filename_extension_list = self.filename_splitted[-1:]
         self.filename_extension = self.filename_extension_list.pop(0)
-        pylantorrent.log(logging.DEBUG, "File extension is %s" % self.filename_extension)
-        
-        json_header['length'] = self.data_size
-        json_header['filename_extension'] = self.filename_extension
-        json_header['compression'] = compression
             
+        pylantorrent.log(logging.DEBUG, "File extension is %s" % self.filename_extension)
+
+        json_header['length'] = self.data_size
+        json_header['compression'] = compression
+        json_header['filename_extension'] = self.filename_extension
         #encoding
         outs = json.dumps(json_header)
         auth_hash = pylantorrent.get_auth_hash(outs)

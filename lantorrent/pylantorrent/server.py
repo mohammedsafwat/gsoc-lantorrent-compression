@@ -10,6 +10,7 @@ import simplejson as json
 import traceback
 import hashlib
 from decompress import LTDecompress
+from decompress import LTCompress
 #  The first thing sent is a json header terminated by a single line
 #  of EOH
 #
@@ -40,6 +41,7 @@ class LTServer(object):
         self.files_a = []
         self.md5str = None
         self.decomp_obj = None
+        self.comp_obj = None
         
     def _close_files(self):
         for f in self.files_a:
@@ -83,18 +85,38 @@ class LTServer(object):
         self.data_length = long(self.json_header['length'])
 	self.compression_type = self.json_header['compression']
         self.filename_extension = self.json_header['filename_extension']
+        self.compress_input = self.json_header['compress_input']
         pylantorrent.log(logging.DEBUG, "Received file extension is %s" % self.filename_extension)
-        
+        pylantorrent.log(logging.DEBUG, "Compress input state is %s" % self.compress_input)
+        '''
+        if no compression, then it's one of those probabilities:
+        #The file is bz2 compressed, and it will be decompressed normally.
+        #The file is compressed, but not bz2 compression. It will be written
+        compressed to the output file.
+        #The file is not compressed, and it will be written as it is in the
+        output file.
+        '''
         if self.compression_type or self.filename_extension:
-            temp_compression_type = self.compression_type or self.filename_extension
-            pylantorrent.log(logging.DEBUG, "temp_compression_type is %s" % temp_compression_type)
-            try:
-                # we pick the decompression type as soon as possible
-                self.decomp_obj = LTDecompress(temp_compression_type)
-                #self.decomp_obj = LTDecompress(self.compression_type)
-            except LTException, ex:
-                pylantorrent.log(logging.ERROR, "Problem with auto-decompression, will write the program compressed.")
-	
+            self.temp_compression_type = self.compression_type or self.filename_extension
+            pylantorrent.log(logging.DEBUG, "Sent file extension is %s" % self.temp_compression_type)
+            if self.temp_compression_type == "bz2" and self.compress_input == False:
+                try:
+                    self.decomp_obj = LTDecompress(self.temp_compression_type)
+                except LTException, ex:
+                    pylantorrent.log(logging.ERROR, "Problem with auto-decompression, will write the program compressed.")
+            elif self.temp_compression_type != "bz2" and self.compress_input == True:
+                try:
+                    self.comp_obj = LTCompress()
+                except LTException, ex:
+                    pylantorrent.log(logging.ERROR, "Problem with compression.")
+            elif self.temp_compression_type != "bz2" and self.compress_input == False:
+                try:
+                    self.decomp_obj = LTDecompress(self.temp_compression_type)
+                except LTException, ex:
+                    pylantorrent.log(logging.ERROR, "Problem with auto-decompression. The filename extension is not bz2. Will write the program compressed.")
+            elif self.temp_compression_type == "bz2" and self.compress_input == True:
+                raise Exception("Error. Maybe the source file is already compressed?")
+
     def print_results(self, s):
         pylantorrent.log(logging.DEBUG, "printing\n--------- \n%s\n---------------" % (s))
         self.outf.write(s)
@@ -156,10 +178,14 @@ class LTServer(object):
             md5er.update(data)
             for v_con in self.v_con_array:
                 v_con.send(data)
+            if self.comp_obj:
+                data = self.comp_obj.zip(data)
+                self.comp_obj.flush()
 	    if self.decomp_obj:
                 data = self.decomp_obj.unzip(data)
             for f in self.files_a:
                 f.write(data)
+
             #self.source_conn._close()
             read_count = read_count + len(data)
         self.md5str = str(md5er.hexdigest()).strip()
@@ -172,6 +198,7 @@ class LTServer(object):
         header = self.json_header
         requests_a = header['requests']
         compression = header['compression']
+        compress_input = header['compress_input']
         self._open_dest_files(requests_a)
         destinations = header['destinations']
         self._get_valid_vcons(destinations)
@@ -191,7 +218,7 @@ class LTServer(object):
         # if we got to here it was successfully written to a file
         # and we can call it success.  Print out a success message for 
         # everyfile written
-        vex = LTException(0, "Success", compression, header['host'], int(header['port']), requests_a, md5sum=self.md5str)
+        vex = LTException(0, "Success", compression, compress_input, header['host'], int(header['port']), requests_a, md5sum=self.md5str)
         s = vex.get_printable()
         self.print_results(s)
         #self.clean_up()
