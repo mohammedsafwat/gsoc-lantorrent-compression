@@ -121,7 +121,13 @@ class LTServer(object):
                 except LTException, ex:
                     pylantorrent.log(logging.ERROR, "Problem with auto-decompression. The filename extension is not bz2. Will write the program compressed.")
             elif self.temp_compression_type == "bz2" and self.compress_input == True:
-                raise Exception("Error. Maybe the source file is already compressed?")
+                try:
+                    self.comp_obj = False
+                    self.decomp_obj = False
+                    pylantorrent.log(logging.INFO, "The file is already compressed. Sending it with no more compression.")
+                except LTException, ex:
+                    pylantorrent.log(logging.ERROR, "Problem while sending the %s compressed file." % self.temp_compression_type)
+                #raise Exception("Error. Maybe the source file is already compressed?")
 
     def print_results(self, s):
         pylantorrent.log(logging.DEBUG, "printing\n--------- \n%s\n---------------" % (s))
