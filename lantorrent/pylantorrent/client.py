@@ -5,18 +5,18 @@ import logging
 import pylantorrent
 from pylantorrent.server import LTServer
 from pylantorrent.ltException import LTException
-try:
-    import json
-except ImportError:
-    import simplejson as json
 import traceback
 import uuid
 import hashlib
 from decompress import LTCompress
-
+try:
+    import json
+except ImportError:
+    import simplejson as json
+    
 class LTClient(object):
 
-    def __init__(self, filename, json_header, compression=None):
+    def __init__(self, filename, json_header):
         self.data_size = os.path.getsize(filename)
         self.data_file = open(filename, "r")
         self.success_count = 0
@@ -27,9 +27,7 @@ class LTClient(object):
         self.filename_extension = self.filename_extension_list.pop(0)
             
         pylantorrent.log(logging.DEBUG, "File extension is %s" % self.filename_extension)
-
-        json_header['length'] = self.data_size
-        json_header['compression'] = compression
+        #json_header['length'] = self.data_size
         json_header['filename_extension'] = self.filename_extension
         #encoding
         outs = json.dumps(json_header)
@@ -43,7 +41,22 @@ class LTClient(object):
         self.incoming_data = ""
 
         self.dest = {}
-        ld = json_header['destinations']
+        ld = json_header
+        pylantorrent.log(logging.DEBUG, "JSON header in LTClient %s" % ld)
+
+        for req in ld['requests']:
+            rid = req['id']
+            fname = req['filename']
+
+            # create an object to track the request info
+            ep = {}
+            ep['host'] = ld['host']
+            ep['port'] = ld['port']
+            ep['id'] = rid
+            ep['filename'] = fname
+            ep['emsg'] = "Success was never reported, nor was a specific error"
+            self.dest[rid] = ep
+        '''
         for d in ld:
             for req in d['requests']:
                 rid = req['id']
@@ -57,7 +70,7 @@ class LTClient(object):
                 ep['filename'] = fname  
                 ep['emsg'] = "Success was never reported, nor was a specific error"
                 self.dest[rid] = ep
-
+        '''
         self.md5er = hashlib.md5()
 
     def flush(self):
@@ -78,7 +91,7 @@ class LTClient(object):
         pylantorrent.log(logging.DEBUG, "reading.... ")
         if self.file_data:
             d = self.data_file.read(blocksize)
- 
+            
             if not d:
                 pylantorrent.log(logging.DEBUG, "no more file data")
                 self.file_data = False

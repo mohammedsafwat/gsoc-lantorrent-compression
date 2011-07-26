@@ -24,10 +24,8 @@ class LTException(Exception):
     errorsCode[510] = "Incorrect checksum %s"
     errorsCode[511] = "Unknown compression type: %s"
 
-    def __init__(self, code, msg, compression_type, compress_input, host=None, port=None, reqs=None, md5sum=""):
+    def __init__(self, code, msg, host=None, port=None, reqs=None, md5sum=""):
         self.code = code
-        self.compression = compression_type
-        self.compress_input = compress_input
         self.host = host
         self.port = port
         self.reqs = reqs
@@ -35,7 +33,7 @@ class LTException(Exception):
         self.md5sum = md5sum
 
     def __str__(self):
-         return "%d %s:%s%s%s %s\r\n" % (self.code, str(self.host), str(self.port), str(self.compression), self.compress_input, str(self.reqs), self.msg)
+         return "%d %s:%s%s %s\r\n" % (self.code, str(self.host), str(self.port), str(self.reqs), self.msg)
 
     #
     #  results json
@@ -63,8 +61,6 @@ class LTException(Exception):
         header['id'] = rid
         header['message'] = self.msg
         header['md5sum'] = self.md5sum
-        header['compression'] = self.compression
-        header['compress_input'] = self.compress_input
         return header
 
 

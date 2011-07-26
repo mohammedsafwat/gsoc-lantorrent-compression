@@ -8,7 +8,7 @@ def main():
     outfilename = sys.argv[2]
     buffer_size = 1024*64
 
-    decomp = LTDecompress()
+    decomp = LTDecompress("bz2")
 
     inf = open(infilename, "r")
     outf = open(outfilename, "w")

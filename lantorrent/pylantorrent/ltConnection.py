@@ -156,6 +156,7 @@ class LTSourceConnection(object):
         self.inf.close()
         
     def _readline(self):
+        pylantorrent.log(logging.INFO, "reading line")
         l = self.inf.readline()
         return l
 
@@ -176,21 +177,23 @@ class LTSourceConnection(object):
         self.footer = foot
         return foot
 
-
     def read_header(self):
         if self.header:
+            pylantorrent.log(logging.INFO, "found a header already.")
             return self.header
 
-        pylantorrent.log(logging.INFO, "reading a new header")
+        pylantorrent.log(logging.INFO, "reading a new header.......")
 
         count = 0
         lines = ""
         l = self._readline()
+        pylantorrent.log(logging.INFO, "l %s" % l)
         while l:
             ndx = l.find("EOH : ")
             if ndx == 0:
                 break
             lines = lines + l
+            pylantorrent.log(logging.INFO, "lines %s" % lines)
             l = self._readline()
             count = count + 1
             if count == self.max_header_lines:
@@ -198,7 +201,6 @@ class LTSourceConnection(object):
         if l == None:
             raise LTException(501, "No signature found")
         signature = l[len("EOH : "):].strip()
-
         auth_hash = pylantorrent.get_auth_hash(lines)
 
         if auth_hash != signature:
@@ -226,7 +228,7 @@ class LTSourceConnection(object):
             compress_input = self.header['compress_input']
         except Exception, ex:
             raise LTException(502, str(ex), traceback)
-
+        
     def read_data(self, bs):
         return self._read(bs)
 

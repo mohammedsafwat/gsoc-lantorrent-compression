@@ -15,7 +15,11 @@ except ImportError:
     import sha
 import base64
 import uuid
-
+try:
+    import json
+except ImportError:
+    import simplejson as json
+    
 Version = "0.1"
 
 def log(level, msg, tb=None):
@@ -29,7 +33,6 @@ def log(level, msg, tb=None):
         logging.log(level, sys.exc_info()[0])
 
 def create_endpoint_entry(host, dest_files, data_size, compression=None, port=2893, block_size=128*1024, degree=1, compress_input=False, rename=True):
-
     final = {}
     requests = []
     for df in dest_files:
@@ -38,7 +41,7 @@ def create_endpoint_entry(host, dest_files, data_size, compression=None, port=28
         ent['rename'] = rename
         ent['id'] = str(uuid.uuid1())
         requests.append(ent)
-          
+
     final['requests'] = requests
     final['host'] = host
     final['port'] = port
