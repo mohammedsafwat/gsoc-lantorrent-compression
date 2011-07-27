@@ -109,17 +109,22 @@ class LTServer(object):
                 except LTException, ex:
                     pylantorrent.log(logging.ERROR, "Problem with auto-decompression, will write the program compressed.")
             elif self.temp_compression_type != "bz2" and self.compress_input == True:
-                try:
-                    self.comp_obj = LTCompress()
-                    pylantorrent.log(logging.DEBUG, "Compressing the %s file" % self.temp_compression_type)
-                except LTException, ex:
-                    pylantorrent.log(logging.ERROR, "Problem with compression.")
+                if self.temp_compression_type == "gz":
+                    self.comp_obj = False
+                    self.decomp_obj = False
+                else:
+                    try:
+                        self.comp_obj = LTCompress()
+                        pylantorrent.log(logging.DEBUG, "Compressing the %s file" % self.temp_compression_type)
+                    except LTException, ex:
+                        pylantorrent.log(logging.ERROR, "Problem with compression.")
             elif self.temp_compression_type != "bz2" and self.compress_input == False:
                 try:
-                    pylantorrent.log(logging.DEBUG, "Decompressing the %s file" % self.temp_compression_type)
-                    self.decomp_obj = LTDecompress(self.temp_compression_type)
+                    self.comp_obj = False
+                    self.decomp_obj = False
+                    pylantorrent.log(logging.DEBUG, "Passing the %s file as it is." % self.temp_compression_type)
                 except LTException, ex:
-                    pylantorrent.log(logging.ERROR, "Problem with auto-decompression. The filename extension is not bz2. Will write the program compressed.")
+                    pylantorrent.log(logging.ERROR, "Problem when passing the %s file." % self.temp_compression_type)
             elif self.temp_compression_type == "bz2" and self.compress_input == True:
                 try:
                     self.comp_obj = False
