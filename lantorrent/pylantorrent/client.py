@@ -22,13 +22,38 @@ class LTClient(object):
         self.success_count = 0
         self.md5str = None
 
+        #filename extension
         self.filename_splitted = filename.split('.')
         self.filename_extension_list = self.filename_splitted[-1:]
         self.filename_extension = self.filename_extension_list.pop(0)
-            
         pylantorrent.log(logging.DEBUG, "File extension is %s" % self.filename_extension)
+
+        #get the compression type from header that's passed to json_header
+        self.compression_type = json_header['compression']
+        #check if the compression option is passed via the command line
+        self.compress_input = json_header['compress_input']
+        
+        #usecases for the compression/decompression
+        if self.compression_type or self.filename_extension:
+            self.temp_compression_type = self.compression_type or self.filename_extension
+            pylantorrent.log(logging.DEBUG, "Sent file extension is %s" % self.temp_compression_type)
+            if self.temp_compression_type == "bz2":
+                if self.compress_input == False: #no compression option is passed via the command-line
+                    self.mode = 'decompression'
+                elif self.compress_input == True: #the compression option is passed via the command-line
+                    self.mode = 'pass' #pass the file as it is with no compression or decompression
+            if self.temp_compression_type != "bz2":
+                if self.compress_input == False:
+                    self.mode = 'pass'
+                elif self.compress_input == True:
+                    if self.temp_compression_type == "gz":
+                        self.mode = 'pass'
+                    else:
+                        self.mode = 'compression'
+                    
         #json_header['length'] = self.data_size
-        json_header['filename_extension'] = self.filename_extension
+        json_header['mode'] = self.mode
+        json_header['temp_compression_type'] = self.temp_compression_type
         #encoding
         outs = json.dumps(json_header)
         auth_hash = pylantorrent.get_auth_hash(outs)

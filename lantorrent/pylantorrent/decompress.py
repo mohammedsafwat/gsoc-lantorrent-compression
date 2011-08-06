@@ -32,10 +32,10 @@ class LTDecompress(object):
         #  type.  Only bz is supported for now.  all others will cause an
         #  error
         if compression_type.lower() == "bz2":
-            pylantorrent.log(logging.ERROR, "Yes..the compression type is %s" % compression_type)
+            pylantorrent.log(logging.INFO, "Yes..the compression type is %s" % compression_type)
             self._bzip = bz2.BZ2Decompressor()
         else:
-            pylantorrent.log(logging.ERROR, "The compression type is not bz2. It's %s" % compression_type)
+            pylantorrent.log(logging.INFO, "The compression type is not bz2. It's %s" % compression_type)
             raise Exception("Unknown compression type %s", compression_type.lower())
             
     def unzip(self, buffer):

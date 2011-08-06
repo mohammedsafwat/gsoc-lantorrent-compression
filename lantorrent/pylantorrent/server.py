@@ -32,7 +32,6 @@ class LTServer(object):
 
     def __init__(self, inf, outf):
         self.json_header = {}
-        pylantorrent.log(logging.INFO, "inf in LTServer %s" % inf)
         self.source_conn = LTSourceConnection(inf)
         self.outf = outf
         self.block_size = 128*1024
@@ -86,53 +85,28 @@ class LTServer(object):
         pylantorrent.log(logging.DEBUG, "self.source_conn.read_header() %s" % self.json_header)
         self.degree = int(self.json_header['degree'])
         self.data_length = long(self.json_header['length'])
-	self.compression_type = self.json_header['compression']
-        self.filename_extension = self.json_header['filename_extension']
-        self.compress_input = self.json_header['compress_input']
-        pylantorrent.log(logging.DEBUG, "Received file extension is %s" % self.filename_extension)
-        pylantorrent.log(logging.DEBUG, "Compress input state is %s" % self.compress_input)
-        '''
-        if no compression, then it's one of those probabilities:
-        #The file is bz2 compressed, and it will be decompressed normally.
-        #The file is compressed, but not bz2 compression. It will be written
-        compressed to the output file.
-        #The file is not compressed, and it will be written as it is in the
-        output file.
-        '''
-        if self.compression_type or self.filename_extension:
-            self.temp_compression_type = self.compression_type or self.filename_extension
-            pylantorrent.log(logging.DEBUG, "Sent file extension is %s" % self.temp_compression_type)
-            if self.temp_compression_type == "bz2" and self.compress_input == False:
-                try:
-                    self.decomp_obj = LTDecompress(self.temp_compression_type)
-                    pylantorrent.log(logging.DEBUG, "Decompressing the bz2 file...")
-                except LTException, ex:
-                    pylantorrent.log(logging.ERROR, "Problem with auto-decompression, will write the program compressed.")
-            elif self.temp_compression_type != "bz2" and self.compress_input == True:
-                if self.temp_compression_type == "gz":
-                    self.comp_obj = False
-                    self.decomp_obj = False
-                else:
-                    try:
-                        self.comp_obj = LTCompress()
-                        pylantorrent.log(logging.DEBUG, "Compressing the %s file" % self.temp_compression_type)
-                    except LTException, ex:
-                        pylantorrent.log(logging.ERROR, "Problem with compression.")
-            elif self.temp_compression_type != "bz2" and self.compress_input == False:
-                try:
-                    self.comp_obj = False
-                    self.decomp_obj = False
-                    pylantorrent.log(logging.DEBUG, "Passing the %s file as it is." % self.temp_compression_type)
-                except LTException, ex:
-                    pylantorrent.log(logging.ERROR, "Problem when passing the %s file." % self.temp_compression_type)
-            elif self.temp_compression_type == "bz2" and self.compress_input == True:
-                try:
-                    self.comp_obj = False
-                    self.decomp_obj = False
-                    pylantorrent.log(logging.INFO, "The file is already compressed. Sending it with no more compression.")
-                except LTException, ex:
-                    pylantorrent.log(logging.ERROR, "Problem while sending the %s compressed file." % self.temp_compression_type)
-                #raise Exception("Error. Maybe the source file is already compressed?")
+        self.mode = self.json_header['mode']
+        self.temp_compression_type = self.json_header['temp_compression_type']
+
+        if self.mode == 'pass':
+            try:
+                self.comp_obj = False
+                self.decomp_obj = False
+                pylantorrent.log(logging.DEBUG, "Passing the %s file as it is." % self.temp_compression_type)
+            except:
+                pylantorrent.log(logging.ERROR, "Problem when passing the %s file." % self.temp_compression_type)
+        if self.mode == 'decompression':
+            try:
+                self.decomp_obj = LTDecompress(self.temp_compression_type)
+                pylantorrent.log(logging.DEBUG, "Decompressing the bz2 file...")
+            except LTException:
+                pylantorrent.log(logging.ERROR, "Problem with auto-decompression, will write the program compressed.")
+        if self.mode == 'compression':
+            try:
+                self.comp_obj = LTCompress()
+                pylantorrent.log(logging.DEBUG, "Compressing the %s file" % self.temp_compression_type)
+            except LTException, ex:
+                pylantorrent.log(logging.ERROR, "Problem with compression.")
 
     def print_results(self, s):
         pylantorrent.log(logging.DEBUG, "printing\n--------- \n%s\n---------------" % (s))
