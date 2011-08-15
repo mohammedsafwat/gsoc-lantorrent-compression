@@ -11,6 +11,7 @@ import traceback
 import hashlib
 from decompress import LTDecompress
 from decompress import LTCompress
+from pylantorrent.client import LTClient
 #  The first thing sent is a json header terminated by a single line
 #  of EOH
 #
@@ -31,6 +32,7 @@ from decompress import LTCompress
 class LTServer(object):
 
     def __init__(self, inf, outf):
+        self.inf = inf
         self.json_header = {}
         self.source_conn = LTSourceConnection(inf)
         self.outf = outf
@@ -82,12 +84,20 @@ class LTServer(object):
     def _read_header(self):
         pylantorrent.log(logging.DEBUG, "beginning _read_header()")
         self.json_header = self.source_conn.read_header()
-        pylantorrent.log(logging.DEBUG, "self.source_conn.read_header() %s" % self.json_header)
+        pylantorrent.log(logging.DEBUG, "##self.source_conn.read_header() %s" % self.json_header)
         self.degree = int(self.json_header['degree'])
         self.data_length = long(self.json_header['length'])
         self.mode = self.json_header['mode']
         self.temp_compression_type = self.json_header['temp_compression_type']
+        self.compress_input = self.json_header['compress_input']
+        self.client_files_a = self.json_header['client_files_a']
+        pylantorrent.log(logging.INFO, "#client_files_a in server.py %s" % self.client_files_a)
 
+        if self.compress_input == True:
+            for f in self.client_files_a:
+                self.f_inf = open(f, "r")
+                self.source_conn = LTSourceConnection(self.f_inf)
+                
         if self.mode == 'pass':
             try:
                 self.comp_obj = False
@@ -95,19 +105,14 @@ class LTServer(object):
                 pylantorrent.log(logging.DEBUG, "Passing the %s file as it is." % self.temp_compression_type)
             except:
                 pylantorrent.log(logging.ERROR, "Problem when passing the %s file." % self.temp_compression_type)
+                
+        #if the mode is 'decompression'
         if self.mode == 'decompression':
             try:
                 self.decomp_obj = LTDecompress(self.temp_compression_type)
-                pylantorrent.log(logging.DEBUG, "Decompressing the bz2 file...")
             except LTException:
                 pylantorrent.log(logging.ERROR, "Problem with auto-decompression, will write the program compressed.")
-        if self.mode == 'compression':
-            try:
-                self.comp_obj = LTCompress()
-                pylantorrent.log(logging.DEBUG, "Compressing the %s file" % self.temp_compression_type)
-            except LTException, ex:
-                pylantorrent.log(logging.ERROR, "Problem with compression.")
-
+                
     def print_results(self, s):
         pylantorrent.log(logging.DEBUG, "printing\n--------- \n%s\n---------------" % (s))
         self.outf.write(s)
@@ -166,28 +171,23 @@ class LTServer(object):
         md5er = hashlib.md5()
         read_count = 0
         bs = self.block_size
-        pylantorrent.log(logging.DEBUG, "bs %s" % self.block_size)
+        pylantorrent.log(logging.DEBUG, "###old inf %s" % self.inf)
+        pylantorrent.log(logging.DEBUG, "Outer read_count %s" % read_count)
         while read_count < self.data_length:
-            pylantorrent.log(logging.DEBUG, "read_count %s" % read_count)
+            pylantorrent.log(logging.DEBUG, "Inner read_count %s" % read_count)
             pylantorrent.log(logging.DEBUG, "self.data_length %s" % self.data_length)
             if bs + read_count > self.data_length:
                 bs = self.data_length - read_count
-                pylantorrent.log(logging.DEBUG, "bs2 %s" % bs)
             data = self.source_conn.read_data(bs)
-            pylantorrent.log(logging.DEBUG, "data = self.source_conn.read_data(bs) %s" % data)
+            #data = self.f_inf.read(bs)
+            pylantorrent.log(logging.DEBUG, "##data = self.source_conn.read_data(bs) %s" % data)
             read_count = read_count + len(data)
             pylantorrent.log(logging.DEBUG, "read_count = read_count + len(data) %s" % read_count)
             if data == None:
                 raise Exception("Data is None prior to receiving full file %d %d" % (read_count, self.data_length))
             md5er.update(data)
             for v_con in self.v_con_array:
-                pylantorrent.log(logging.DEBUG, "v_con.send(data)")
                 v_con.send(data)
-            if self.comp_obj:
-                pylantorrent.log(logging.DEBUG, "Zipping...")
-                data = self.comp_obj.zip(data)
-                pylantorrent.log(logging.DEBUG, "Zipped Data %s" % data)
-                self.comp_obj.flush()
             if self.decomp_obj:
                 pylantorrent.log(logging.DEBUG, "Unzipping...")
                 data = self.decomp_obj.unzip(data)
@@ -200,7 +200,7 @@ class LTServer(object):
 
 
     def store_and_forward(self):
-
+        
         self._read_header()
         header = self.json_header
         pylantorrent.log(logging.DEBUG, "JSON header in store_and_forward %s" % header)

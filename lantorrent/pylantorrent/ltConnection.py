@@ -31,20 +31,25 @@ class LTDestConnection(object):
 
         try:
             self.host = json_ent['host']
+            pylantorrent.log(logging.INFO, "####self.host in LTDestConnection is %s" % self.host)
             self.port = int(json_ent['port'])
+            pylantorrent.log(logging.INFO, "####self.port in LTDestConnection is %s" % self.port)
             self.requests = json_ent['requests']
             self.block_size = int(json_ent['block_size'])
             self.degree = int(json_ent['degree'])
             self.data_length = int(json_ent['length'])
 	    self.compression_type = json_ent['compression']
         except Exception, ex:
-            vex = LTException(504, str(json_ent) + " :: " + str(ex))
+            vex = LTException(504, str(json_ent) + " :: " + str(ex), "")
             pylantorrent.log(logging.ERROR, str(vex), traceback)
             raise vex
 
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((self.host, self.port))
+            try:
+                s.connect((self.host, self.port))
+            except Exception:
+                print 'connection refused.'
             self.socket = s
         except Exception, ex:
             vex = LTException(505, "%s:%d" % (self.host, self.port), self.host, self.port, reqs=self.requests)
@@ -127,7 +132,10 @@ class LTDestConnection(object):
 
     def close(self, force=False):
         # reading of footer waits for eof so this is needed
-        self.socket.shutdown(socket.SHUT_WR)
+        try:
+            self.socket.shutdown(socket.SHUT_WR)
+        except Exception:
+            print 'shutdown of socket failed.'
         self.read_to_eof()
         self.valid = False
         self.socket.close()
@@ -151,13 +159,11 @@ class LTSourceConnection(object):
         else:
             d = self.inf.read(bs)
         return d
-    
-    def _close(self):
-        self.inf.close()
-        
+
     def _readline(self):
-        pylantorrent.log(logging.INFO, "reading line")
+	pylantorrent.log(logging.INFO, "start of _readline()")
         l = self.inf.readline()
+	pylantorrent.log(logging.INFO, "l = self.inf.readline() %s" % l)
         return l
 
     def read_footer(self, md5str):
@@ -167,6 +173,7 @@ class LTSourceConnection(object):
         pylantorrent.log(logging.DEBUG, "begin reading the footer")
         lines = ""
         l = self._read()
+        pylantorrent.log(logging.INFO, "l = self._read() %s" % l)
         while l:
             lines = lines + l
             l = self._read()
@@ -177,42 +184,45 @@ class LTSourceConnection(object):
         self.footer = foot
         return foot
 
+
     def read_header(self):
         if self.header:
-            pylantorrent.log(logging.INFO, "found a header already.")
+	    pylantorrent.log(logging.INFO, "found a header already.")
             return self.header
-
-        pylantorrent.log(logging.INFO, "reading a new header.......")
-
+	pylantorrent.log(logging.INFO, "Reading a new header.")
         count = 0
         lines = ""
         l = self._readline()
-        pylantorrent.log(logging.INFO, "l %s" % l)
+	pylantorrent.log(logging.INFO, "l is %s" % l)
         while l:
             ndx = l.find("EOH : ")
             if ndx == 0:
                 break
             lines = lines + l
-            pylantorrent.log(logging.INFO, "lines %s" % lines)
             l = self._readline()
+	    pylantorrent.log(logging.INFO, "l2 is %s" % l)
             count = count + 1
             if count == self.max_header_lines:
                 raise LTException(501, "%d lines long, only %d allowed" % (count, max_header_lines))
         if l == None:
             raise LTException(501, "No signature found")
         signature = l[len("EOH : "):].strip()
+
         auth_hash = pylantorrent.get_auth_hash(lines)
 
         if auth_hash != signature:
             pylantorrent.log(logging.INFO, "ACCESS DENIED |%s| != |%s| -->%s<---" % (auth_hash, signature, lines))
             raise LTException(508, "%s is a bad signature" % (auth_hash))
-
+	pylantorrent.log(logging.INFO, "lines are %s" % lines)
         self.header = json.loads(lines)
-        return self.header
+        pylantorrent.log(logging.INFO, "self.header %s" % self.header)
+	pylantorrent.log(logging.INFO, "port is : %s" % self.header['port'])
+	return self.header
 
         # verify the header
         try:
             reqs = self.header['requests']
+	    pylantorrent.log(logging.INFO, "reqs %s" % reqs)
             for r in reqs:
                 filename = r['filename']
                 rid = r['id']
@@ -223,12 +233,11 @@ class LTSourceConnection(object):
             urls = self.header['destinations']
             degree = int(self.header['degree'])
             data_length = long(self.header['length'])
-            compression_type = self.header['compression']
-            filename_extension = self.header['filename_extension']
+	    filename_extension = self.header['filename_extension']
             compress_input = self.header['compress_input']
         except Exception, ex:
             raise LTException(502, str(ex), traceback)
-        
+
     def read_data(self, bs):
         return self._read(bs)
 

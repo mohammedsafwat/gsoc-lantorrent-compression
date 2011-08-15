@@ -22,7 +22,7 @@ except ImportError:
     import simplejson as json
 
 class create_endpoint_entry:
-    def create_endpoint_entry(self, host, dest_files, data_size, compress_input, compression, port=2893, block_size=128*1024, degree=1, rename=True):
+    def create_endpoint_entry(self, host, client_files_a, dest_files, data_size, compress_input, compression, port=2893, block_size=128*1024, degree=1, rename=True):
         final = {}
         requests = []
         for df in dest_files:
@@ -41,6 +41,7 @@ class create_endpoint_entry:
         final['length'] = data_size
         final['compression'] = compression
         final['compress_input'] = compress_input
+        final['client_files_a'] = client_files_a
         pylantorrent.log(logging.DEBUG, "dest_files %s" % dest_files)
         pylantorrent.log(logging.DEBUG, "compress_input state %s" % compress_input)
         return final

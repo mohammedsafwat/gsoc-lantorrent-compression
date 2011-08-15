@@ -13,14 +13,15 @@ class DecompressionTest(unittest.TestCase):
     def setUp(self):
         self.host = "localhost"
         #src file for decompression
-        self.src_file = "/home/mohammed/Desktop/op.txt.bz2"
+        self.src_file = "/home/mohammed/Desktop/one.txt"
         self.dest_file = "/home/mohammed/Desktop/output2.txt"
+        self.client_files_a = ["/home/mohammed/Desktop/cf1.txt.bz2"]
         self.inf = open(self.src_file, 'r')
         self.src_size = os.path.getsize(self.src_file)
         #the compression type used, needed for
         #decompression to check for the extension.
         self.compression_type = ""
-        self.compress_input = False #compress the input or not option
+        self.compress_input = True #compress the input or not option
         
     def test_decompression(self):   
         '''
@@ -28,7 +29,7 @@ class DecompressionTest(unittest.TestCase):
         pass it, the decompression will be determined by the filename extension.
         '''
         endpoint = create_endpoint_entry()
-        final = endpoint.create_endpoint_entry(self.host, ["/home/mohammed/Desktop/op.txt"], self.src_size, self.compress_input, self.compression_type, rename=False)
+        final = endpoint.create_endpoint_entry(self.host, self.client_files_a, ["/home/mohammed/Desktop/op3.txt"], self.src_size, self.compress_input, self.compression_type, rename=False)
         #final = ["/home/mohammed/Desktop/output2.txt"]
         '''
         self.compression_type is an optional parameter. You can pass it or not.

@@ -39,6 +39,7 @@ class LTDecompress(object):
             raise Exception("Unknown compression type %s", compression_type.lower())
             
     def unzip(self, buffer):
+        pylantorrent.log(logging.INFO, "unzip buffer %s" % buffer)
         try:
             return self._bzip.decompress(buffer)
         except EOFError:

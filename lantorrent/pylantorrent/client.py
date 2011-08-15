@@ -1,3 +1,4 @@
+import os.path
 import sys
 import os
 from socket import *
@@ -8,6 +9,7 @@ from pylantorrent.ltException import LTException
 import traceback
 import uuid
 import hashlib
+import stat
 from decompress import LTCompress
 try:
     import json
@@ -21,27 +23,31 @@ class LTClient(object):
         self.data_file = open(filename, "r")
         self.success_count = 0
         self.md5str = None
+        self.comp_obj = None
+        self.file_data = True
+        self.pau = False
+        self.md5er = hashlib.md5()
 
-        #filename extension
-        self.filename_splitted = filename.split('.')
-        self.filename_extension_list = self.filename_splitted[-1:]
-        self.filename_extension = self.filename_extension_list.pop(0)
-        pylantorrent.log(logging.DEBUG, "File extension is %s" % self.filename_extension)
+        self.get_file_extension(filename)
 
         #get the compression type from header that's passed to json_header
         self.compression_type = json_header['compression']
         #check if the compression option is passed via the command line
         self.compress_input = json_header['compress_input']
-        
+        self.client_files_a = json_header['client_files_a']
+        pylantorrent.log(logging.INFO, "###client_files_a in client.py %s" % self.client_files_a)
+
         #usecases for the compression/decompression
         if self.compression_type or self.filename_extension:
             self.temp_compression_type = self.compression_type or self.filename_extension
             pylantorrent.log(logging.DEBUG, "Sent file extension is %s" % self.temp_compression_type)
+            
             if self.temp_compression_type == "bz2":
                 if self.compress_input == False: #no compression option is passed via the command-line
                     self.mode = 'decompression'
                 elif self.compress_input == True: #the compression option is passed via the command-line
                     self.mode = 'pass' #pass the file as it is with no compression or decompression
+                    
             if self.temp_compression_type != "bz2":
                 if self.compress_input == False:
                     self.mode = 'pass'
@@ -50,10 +56,31 @@ class LTClient(object):
                         self.mode = 'pass'
                     else:
                         self.mode = 'compression'
-                    
-        #json_header['length'] = self.data_size
+                        pylantorrent.log(logging.INFO, "####The mode is compression.")
+                        try:
+                            self.comp_obj = LTCompress()
+                            d = self.read()
+                            pylantorrent.log(logging.INFO, "###d = self.read() is %s" % d)
+                            self.data = self.comp_obj.zip(d)
+                            self.comp_obj.flush()
+                            pylantorrent.log(logging.INFO, "Compressing the %s file...Zipping.." % self.temp_compression_type)
+                            for f in self.client_files_a:
+                                pylantorrent.log(logging.INFO, "f in self.client_files_a %s" % f)
+                                self.f_stream = open(f, 'w')
+                                pylantorrent.log(logging.INFO, "#####f_stream %s" % self.f_stream)
+                                self.f_stream.write(self.data)
+                                self.temp_compression_type = self.get_file_extension(f)
+                                self.data_size = len(self.data)
+                                pylantorrent.log(logging.INFO, "####last self.data_size %s" % self.data_size)
+                        except LTException:
+                            pylantorrent.log(logging.ERROR, "Problem with compression.")
+
+        json_header['length'] = self.data_size
         json_header['mode'] = self.mode
+        pylantorrent.log(logging.INFO, "########last self.mode is %s" % self.mode)
         json_header['temp_compression_type'] = self.temp_compression_type
+        pylantorrent.log(logging.INFO, "########last self.temp_compression_type is %s" % self.temp_compression_type)
+        json_header['client_files_a'] = self.client_files_a
         #encoding
         outs = json.dumps(json_header)
         auth_hash = pylantorrent.get_auth_hash(outs)
@@ -61,8 +88,8 @@ class LTClient(object):
         self.header_lines.append("EOH : %s" % (auth_hash))
         self.errors = []
         self.complete = {}
-        self.file_data = True
-        self.pau = False
+        #self.file_data = True
+        #self.pau = False
         self.incoming_data = ""
 
         self.dest = {}
@@ -96,8 +123,24 @@ class LTClient(object):
                 ep['emsg'] = "Success was never reported, nor was a specific error"
                 self.dest[rid] = ep
         '''
-        self.md5er = hashlib.md5()
+        #self.md5er = hashlib.md5()
 
+    def write_to_client_files(self, d):
+        for f in self.client_files_a:
+            self.f_stream = open(f, 'w')
+            pylantorrent.log(logging.INFO, "#####f_stream %s" % self.f_stream)
+            self.f_stream.write(d)
+
+    def get_file_extension(self, filename):
+        self.filename_splitted = filename.split('.')
+        self.filename_extension_list = self.filename_splitted[-1:]
+        self.filename_extension = self.filename_extension_list.pop(0)
+        pylantorrent.log(logging.DEBUG, "##File extension is %s" % self.filename_extension)
+        return self.filename_extension
+
+    def get_f_stream(self):
+        return self.f_stream
+        
     def flush(self):
         pass
 
@@ -106,8 +149,8 @@ class LTClient(object):
             return None
         l = self.header_lines.pop(0)
         return l
-
-    def read(self, blocksize=1):
+                            
+    def read(self, blocksize=128*1024): #blocksize was 1
         pylantorrent.log(logging.DEBUG, "begin reading.... pau is %s" % (str(self.pau)))
 
         if self.pau:
@@ -171,9 +214,6 @@ class LTClient(object):
         self.process_incoming_data()
         return self.dest
 
-
-
-
 def main(argv=sys.argv[1:]):
     
     dests = [] 
@@ -232,4 +272,3 @@ if __name__ == "__main__":
         raise Exception(msg)
     rc = main()
     sys.exit(rc)
-
