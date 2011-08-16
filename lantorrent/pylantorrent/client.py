@@ -69,8 +69,10 @@ class LTClient(object):
                                 self.f_stream = open(f, 'w')
                                 pylantorrent.log(logging.INFO, "#####f_stream %s" % self.f_stream)
                                 self.f_stream.write(self.data)
+                                self.f_stream.close()
                                 self.temp_compression_type = self.get_file_extension(f)
                                 self.data_size = len(self.data)
+                                self.mode = 'decompression'
                                 pylantorrent.log(logging.INFO, "####last self.data_size %s" % self.data_size)
                         except LTException:
                             pylantorrent.log(logging.ERROR, "Problem with compression.")

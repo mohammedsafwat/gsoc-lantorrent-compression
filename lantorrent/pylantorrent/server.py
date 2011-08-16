@@ -87,16 +87,22 @@ class LTServer(object):
         pylantorrent.log(logging.DEBUG, "##self.source_conn.read_header() %s" % self.json_header)
         self.degree = int(self.json_header['degree'])
         self.data_length = long(self.json_header['length'])
+        pylantorrent.log(logging.INFO, "###last self.data_length %s" % self.data_length)
         self.mode = self.json_header['mode']
         self.temp_compression_type = self.json_header['temp_compression_type']
         self.compress_input = self.json_header['compress_input']
         self.client_files_a = self.json_header['client_files_a']
+        pylantorrent.log(logging.INFO, "#self.compress_input state in _read_header is %s" % self.compress_input)
         pylantorrent.log(logging.INFO, "#client_files_a in server.py %s" % self.client_files_a)
 
         if self.compress_input == True:
             for f in self.client_files_a:
-                self.f_inf = open(f, "r")
+                try:
+                    self.f_inf = open(f, "r")
+                except Exception:
+                    print "There was an error opening the f file."
                 self.source_conn = LTSourceConnection(self.f_inf)
+                pylantorrent.log(logging.INFO, "##self.source_conn in compression mode is %s" % self.source_conn)
                 
         if self.mode == 'pass':
             try:
@@ -180,6 +186,8 @@ class LTServer(object):
                 bs = self.data_length - read_count
             data = self.source_conn.read_data(bs)
             #data = self.f_inf.read(bs)
+            if data:
+                pylantorrent.log(logging.INFO, "I'm reading data!")
             pylantorrent.log(logging.DEBUG, "##data = self.source_conn.read_data(bs) %s" % data)
             read_count = read_count + len(data)
             pylantorrent.log(logging.DEBUG, "read_count = read_count + len(data) %s" % read_count)
