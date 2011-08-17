@@ -71,6 +71,8 @@ class LTServer(object):
         self.created_files = []
 
     def _read_footer(self):
+        pylantorrent.log(logging.INFO, "beginning _read_footer..")
+        pylantorrent.log(logging.INFO, "current source_conn %s" % self.source_conn)
         self.footer = self.source_conn.read_footer(self.md5str)
 
     def _send_footer(self):
@@ -161,8 +163,8 @@ class LTServer(object):
                 rn = req['rename']
                 if rn:
                     filename = filename + self.suffix
-                f = open(filename, "w")
-                files_a.append(f)
+                self.f = open(filename, "w")
+                files_a.append(self.f)
                 self.created_files.append(filename)
             except Exception, ex:
                 pylantorrent.log(logging.ERROR, "Failed to open %s" % (filename), traceback)
@@ -193,7 +195,7 @@ class LTServer(object):
             pylantorrent.log(logging.DEBUG, "read_count = read_count + len(data) %s" % read_count)
             if data == None:
                 raise Exception("Data is None prior to receiving full file %d %d" % (read_count, self.data_length))
-            md5er.update(data)
+            #md5er.update(data)
             for v_con in self.v_con_array:
                 v_con.send(data)
             if self.decomp_obj:
@@ -202,13 +204,14 @@ class LTServer(object):
             pylantorrent.log(logging.DEBUG, "writing to files...")
             for f in self.files_a:
                 f.write(data)
-        
+                self.f.close()
+            md5er.update(data)
         self.md5str = str(md5er.hexdigest()).strip()
         pylantorrent.log(logging.DEBUG, "We have received sent %d bytes. The md5sum is %s" % (read_count, self.md5str))
-
-
-    def store_and_forward(self):
+        self.source_conn = LTSourceConnection(self.inf)
         
+    def store_and_forward(self):
+        #self._read_footer()
         self._read_header()
         header = self.json_header
         pylantorrent.log(logging.DEBUG, "JSON header in store_and_forward %s" % header)
