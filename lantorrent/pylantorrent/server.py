@@ -187,7 +187,6 @@ class LTServer(object):
             if bs + read_count > self.data_length:
                 bs = self.data_length - read_count
             data = self.source_conn.read_data(bs)
-            #data = self.f_inf.read(bs)
             if data:
                 pylantorrent.log(logging.INFO, "I'm reading data!")
             pylantorrent.log(logging.DEBUG, "##data = self.source_conn.read_data(bs) %s" % data)
@@ -195,7 +194,8 @@ class LTServer(object):
             pylantorrent.log(logging.DEBUG, "read_count = read_count + len(data) %s" % read_count)
             if data == None:
                 raise Exception("Data is None prior to receiving full file %d %d" % (read_count, self.data_length))
-            #md5er.update(data)
+            if self.compress_input == False:
+                md5er.update(data)
             for v_con in self.v_con_array:
                 v_con.send(data)
             if self.decomp_obj:
@@ -205,10 +205,12 @@ class LTServer(object):
             for f in self.files_a:
                 f.write(data)
                 self.f.close()
-            md5er.update(data)
+            if self.compress_input == True:
+                md5er.update(data)
+                self.source_conn = LTSourceConnection(self.inf)
         self.md5str = str(md5er.hexdigest()).strip()
         pylantorrent.log(logging.DEBUG, "We have received sent %d bytes. The md5sum is %s" % (read_count, self.md5str))
-        self.source_conn = LTSourceConnection(self.inf)
+            
         
     def store_and_forward(self):
         #self._read_footer()
