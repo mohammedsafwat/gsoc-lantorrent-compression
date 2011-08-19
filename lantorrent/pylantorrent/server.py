@@ -179,7 +179,7 @@ class LTServer(object):
         md5er = hashlib.md5()
         read_count = 0
         bs = self.block_size
-        pylantorrent.log(logging.DEBUG, "###old inf %s" % self.inf)
+        pylantorrent.log(logging.DEBUG, "old inf %s" % self.inf)
         pylantorrent.log(logging.DEBUG, "Outer read_count %s" % read_count)
         while read_count < self.data_length:
             pylantorrent.log(logging.DEBUG, "Inner read_count %s" % read_count)
@@ -189,7 +189,7 @@ class LTServer(object):
             data = self.source_conn.read_data(bs)
             if data:
                 pylantorrent.log(logging.INFO, "I'm reading data!")
-            pylantorrent.log(logging.DEBUG, "##data = self.source_conn.read_data(bs) %s" % data)
+            pylantorrent.log(logging.DEBUG, "data = self.source_conn.read_data(bs) %s" % data)
             read_count = read_count + len(data)
             pylantorrent.log(logging.DEBUG, "read_count = read_count + len(data) %s" % read_count)
             if data == None:
