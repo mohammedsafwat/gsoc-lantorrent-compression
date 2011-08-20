@@ -31,9 +31,9 @@ class LTDestConnection(object):
 
         try:
             self.host = json_ent['host']
-            pylantorrent.log(logging.INFO, "####self.host in LTDestConnection is %s" % self.host)
+            pylantorrent.log(logging.INFO, "self.host in LTDestConnection is %s" % self.host)
             self.port = int(json_ent['port'])
-            pylantorrent.log(logging.INFO, "####self.port in LTDestConnection is %s" % self.port)
+            pylantorrent.log(logging.INFO, "self.port in LTDestConnection is %s" % self.port)
             self.requests = json_ent['requests']
             self.block_size = int(json_ent['block_size'])
             self.degree = int(json_ent['degree'])
