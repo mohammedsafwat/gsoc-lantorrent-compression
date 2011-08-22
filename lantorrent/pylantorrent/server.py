@@ -43,7 +43,6 @@ class LTServer(object):
         self.files_a = []
         self.md5str = None
         self.decomp_obj = None
-        self.comp_obj = None
         
     def _close_files(self):
         for f in self.files_a:
@@ -108,7 +107,6 @@ class LTServer(object):
                 
         if self.mode == 'pass':
             try:
-                self.comp_obj = False
                 self.decomp_obj = False
                 pylantorrent.log(logging.DEBUG, "Passing the %s file as it is." % self.temp_compression_type)
             except:
