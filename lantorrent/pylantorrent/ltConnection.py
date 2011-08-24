@@ -179,7 +179,7 @@ class LTSourceConnection(object):
             l = self._read()
         pylantorrent.log(logging.DEBUG, "footer is %s" % (lines))
         foot = json.loads(lines)
-        #TODO make the two values equal for input is compressed and no compress input.
+
         if foot['md5sum'] != md5str:
             raise LTException(510, "%s != %s" % (md5str, foot['md5sum']), header['host'], int(header['port']), header['compression'], requests_a, md5sum=md5str)
         self.footer = foot
